@@ -12,38 +12,27 @@ STATUS: COMPLETE
 #include <stdio.h>  // Standard input/output library
 #include <stdlib.h> // Standard library
 #include <time.h>   // Time library for random number generation
+#include <strings.h> // String library for string manipulation and dynamic memory allocation
+#include <string.h> // String library for memset
 /*-----------------------------------Variable Declarations-----------------------------------*/
 // Global Constant Variables
-const int GRID_SIZE = 10; // Variable to store the integer value of the grid size
-const int MAX_NAME_LENGTH = 32; // Variable to store the integer value of the maximum name length
-const char EMPTY_CELL = '.'; // Variable to store the character value of the empty cell
-const char HIT_CELL = 'X'; // Variable to store the character value of the hit cell
-const char MISS_CELL = 'O'; // Variable to store the character value of the miss cell
-const char SHIP_CELL = 'S'; // Dedicated constant for ship cells
-const int DEBUG = 0; // Set to 1 to enable the debug flags within my program 
+#define GRID_SIZE 10 // Variable to store the integer value of the grid size
+#define MAX_NAME_LENGTH 32 // Variable to store the integer value of the maximum name length
+#define EMPTY_CELL '.' // Variable to store the character value of the empty cell
+#define HIT_CELL 'X' // Variable to store the character value of the hit cell
+#define MISS_CELL 'O' // Variable to store the character value of the miss cell
+#define SHIP_CELL 'S' // Dedicated constant for ship cells
+#define DEBUG 0 // Set to 1 to enable the debug flags within my program 
 
 // Function declarations (declared in advance since the calling loops cannot be in order)
-void getPlayerName(char* playerName);
-int isValidName(const char* playerName);
-void getAgreement(char* playerAgreement);
 int isValidAgreement(const char* playerAgreement);
-void initializeGame();
-void placePlayerShips();
-void placeEnemyShips();
-void gameLoop();
 void playerTurn();
 void enemyTurn();
-void displayStatistics();
-void playAgain(char* playAgainChoice);
 int isValidCoordinate(int xCoordinate, int yCoordinate);
 int isPlacementValid(int xCoordinate, int yCoordinate, int shipLength, char shipOrientation, char grid[GRID_SIZE][GRID_SIZE]);
 void placeShip(int xCoordinate, int yCoordinate, int shipLength, char shipOrientation, char grid[GRID_SIZE][GRID_SIZE]);
 void printBoard(char grid[GRID_SIZE][GRID_SIZE], const char* boardTitle);
-void printEnemyBoard(char grid[GRID_SIZE][GRID_SIZE], const char* boardTitle);
 void HitandSunkShips(char grid[GRID_SIZE][GRID_SIZE], int* sunkShipCount);
-int getValidCoordinate(const char* prompt);
-int confirmPlacement(const char* shipName, int x, int y, char orientation);
-void displayBoard(char grid[GRID_SIZE][GRID_SIZE], const char* title);
 
 // Global Variables
 char playerGrid[GRID_SIZE][GRID_SIZE]; // Variable to store the player grid
@@ -63,14 +52,15 @@ int lastHitYCoordinate = GRID_SIZE; // Track the last hit coordinates for the Y 
 Purpose: Prompt the player to enter their name.
 Parameters: char* playerName - a pointer to a character array to store the player's name.
 Return: None
-Side Effects: None
+Side Effects: char* playerName - modifies the playerName variable to store the player's name.
 */
 void getPlayerName(char* playerName) {
+    memset(playerName, 0, MAX_NAME_LENGTH); // Initialize memory to prevent garbage values
     printf("\nWelcome player, please enter your name: ");
-    if (scanf("%[^\n]s", playerName) != 1) { // if the player name is not read correctly, print an error message
-        printf("\nError reading the username '%s'. Please restart the game.\n", playerName); // should not happen under normal circumstances
+    if (scanf("%31[^\n]s", playerName) != 1) { // Limit input to prevent buffer overflow
+        printf("\nError reading the username. Please restart the game.\n");
     }
-    fgetc(stdin); 
+    while(getchar() != '\n'); // Clears the input buffer
     printf("\nWelcome, %s! It's a pleasure meeting you!\n", playerName);
 }
 
@@ -121,13 +111,13 @@ void getAgreement(char* playerAgreement) {
     if (scanf(" %c", playerAgreement) != 1) {
         printf("\nError reading agreement. Please restart the game.\n");
     }
-    fgetc(stdin); 
+    while(getchar() != '\n'); // Clears the input buffer 
     while (!isValidAgreement(playerAgreement)) {
         printf("\nI'm sorry, but '%c' is invalid. Do you agree to the game rules? (Y/N): ", *playerAgreement);
         if (scanf(" %c", playerAgreement) != 1) {
             printf("\nError reading agreement. Please restart the game.\n");
         }
-        fgetc(stdin); 
+        while(getchar() != '\n'); // Clears the input buffer 
     }
 }
 
@@ -150,13 +140,9 @@ Return: None
 Side Effects: Modifies the global variables playerGrid, enemyGrid, playerViewOfEnemyGrid, playerHits, playerMisses, playerSunkShips, enemyHits, enemyMisses, enemySunkShips, lastHitXCoordinate, and lastHitYCoordinate.
 */
 void initializeGame() {
-    for (int rowIndex = 0; rowIndex < GRID_SIZE; rowIndex++) {
-        for (int colIndex = 0; colIndex < GRID_SIZE; colIndex++) {
-            playerGrid[rowIndex][colIndex] = EMPTY_CELL;
-            enemyGrid[rowIndex][colIndex] = EMPTY_CELL;
-            playerViewOfEnemyGrid[rowIndex][colIndex] = EMPTY_CELL;
-        }
-    }
+    memset(playerGrid, EMPTY_CELL, sizeof(playerGrid)); // Initialize player grid
+    memset(enemyGrid, EMPTY_CELL, sizeof(enemyGrid)); // Initialize enemy grid
+    memset(playerViewOfEnemyGrid, EMPTY_CELL, sizeof(playerViewOfEnemyGrid)); // Initialize player's view of enemy grid
     playerHits = playerMisses = playerSunkShips = 0;
     enemyHits = enemyMisses = enemySunkShips = 0;
     lastHitXCoordinate = GRID_SIZE; // Set to GRID_SIZE because it is out of valid range
@@ -175,7 +161,7 @@ int getValidCoordinate(const char* prompt) {
     printf("%s", prompt);
     while (scanf("%d", &coordinate) != 1 || coordinate < 1 || coordinate > 10) {
         printf("\nInvalid input. Please enter a number between 1 and 10: ");
-        fgetc(stdin); // Clear the input buffer
+        while(getchar() != '\n'); // Clears the input buffer // Clear the input buffer
     }
     return coordinate - 1; // Adjust for 0-based index
 }
@@ -196,14 +182,14 @@ int confirmPlacement(const char* shipName, int x, int y, char orientation) {
         printf("Error reading confirmation. Please try again.\n");
         return 0; // Indicate failure
     }
-    fgetc(stdin); // Clear the input buffer
+    while(getchar() != '\n'); // Clears the input buffer // Clear the input buffer
     while (confirm != 'Y' && confirm != 'y' && confirm != 'N' && confirm != 'n') {
         printf("\nSorry, but '%c' is invalid. Please enter either 'Y' or 'N': ", confirm);
         if (scanf(" %c", &confirm) != 1) {
             printf("\nError reading confirmation. Please try again.\n");
             return 0; // Indicate failure
         }
-        fgetc(stdin); // Clear the input buffer
+        while(getchar() != '\n'); // Clears the input buffer // Clear the input buffer
     }
     return (confirm == 'Y' || confirm == 'y');
 }
@@ -243,10 +229,10 @@ void placePlayerShips() {
             printf("\nEnter orientation (H for horizontal, V for vertical): ");
             if (scanf(" %c", &shipOrientation) != 1 || (shipOrientation != 'H' && shipOrientation != 'V')) {
                 printf("\nInvalid orientation '%c'. Please enter 'H' for horizontal or 'V' for vertical.\n", shipOrientation);
-                fgetc(stdin);
+                while(getchar() != '\n'); // Clears the input buffer
                 continue;
             }
-            fgetc(stdin);
+            while(getchar() != '\n'); // Clears the input buffer
 
             if (isPlacementValid(xCoordinate, yCoordinate, shipLengths[shipIndex], shipOrientation, playerGrid)) {
                 if (confirmPlacement(shipNames[shipIndex], xCoordinate, yCoordinate, shipOrientation)) {
@@ -594,13 +580,13 @@ void playAgain(char* playAgainChoice) {
     if (scanf(" %c", playAgainChoice) != 1) {
         printf("Error reading choice. Please restart the game.\n");
     }
-    fgetc(stdin); 
+    while(getchar() != '\n'); // Clears the input buffer 
     while (!isValidAgreement(playAgainChoice)) {
         printf("I'm sorry, but '%c' is invalid. Do you want to play again? (Y/N): ", *playAgainChoice);
         if (scanf(" %c", playAgainChoice) != 1) {
             printf("Error reading choice. Please restart the game.\n");
         }
-        fgetc(stdin); 
+        while(getchar() != '\n'); // Clears the input buffer 
     }
 }
 
@@ -728,6 +714,7 @@ int main() {
     getPlayerName(playerName); // Calls the getPlayerName function to get the player's name
     /*--------------------------------------------*/
     while (!isValidName(playerName)) { // While the name is invalid, the user will be prompted to enter a valid name
+        memset(playerName, 0, MAX_NAME_LENGTH); // Clear memory before re-entering name
         printf("Invalid name '%s'. Please enter a valid name (1-32 characters, no special characters): ", playerName);
         getPlayerName(playerName);
     }
@@ -740,23 +727,15 @@ int main() {
     }
     /*--------------------------------------------*/
     if (playerAgreement == 'Y' || playerAgreement == 'y') { // If the user puts 'Y' for agreement, the game will start
-        initializeGame(); // Calls the initializeGame function to initialize the game
-        placePlayerShips(); // Calls the placePlayerShips function to place the player's ships
-        placeEnemyShips(); // Calls the placeEnemyShips function to place the enemy's ships
-        printBoard(playerGrid, "Your Board"); // Calls the printBoard function to print the player's board
-        gameLoop(); // Calls the gameLoop function to start the game
-        displayStatistics(); // Calls the displayStatistics function to display the game statistics
-        playAgain(&playAgainChoice); // Calls the PlayAgain function to prompt the user if they would like to play again
-        /*--------------------------------------------*/
-        while (playAgainChoice == 'Y' || playAgainChoice == 'y') { // While the user wants to play again, the game will reset and call the below functions
-            initializeGame(); // calls the initializeGame function to reset the game
-            placePlayerShips(); // calls the placePlayerShips function to place the player's ships
-            placeEnemyShips(); // calls the placeEnemyShips function to place the enemy's ships
-            printBoard(playerGrid, "Your Board"); // calls the printBoard function to print the player's board
-            gameLoop(); // calls the gameLoop function to start the game
-            displayStatistics(); // calls the displayStatistics function to display the game statistics
-            playAgain(&playAgainChoice); // calls the PlayAgain function to prompt the user if they would like to play again
-        }
+        do {
+            initializeGame(); // Calls the initializeGame function to initialize the game
+            placePlayerShips(); // Calls the placePlayerShips function to place the player's ships
+            placeEnemyShips(); // Calls the placeEnemyShips function to place the enemy's ships
+            printBoard(playerGrid, "Your Board"); // Calls the printBoard function to print the player's board
+            gameLoop(); // Calls the gameLoop function to start the game
+            displayStatistics(); // Calls the displayStatistics function to display the game statistics
+            playAgain(&playAgainChoice); // Calls the PlayAgain function to prompt the user if they would like to play again
+        } while (playAgainChoice == 'Y' || playAgainChoice == 'y');
     }
     /*--------------------------------------------*/
     // End of the game/closing statement
