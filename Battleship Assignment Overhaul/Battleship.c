@@ -71,22 +71,19 @@ Return: 1 if the name is valid, 0 if the name is invalid.
 Side Effects: None
 */
 int isValidName(const char* playerName) {
-    int nameLength = 0;
-    while (playerName[nameLength] != '\0') {
-        nameLength++;
-    }
+    int nameLength = strlen(playerName);
     if (nameLength == 0 || nameLength > MAX_NAME_LENGTH) {
-        exit(0);
+        return 0;
     }
     for (int index = 0; index < nameLength; index++) {
         if (!(playerName[index] >= 'A' && playerName[index] <= 'Z') &&
             !(playerName[index] >= 'a' && playerName[index] <= 'z') &&
             !(playerName[index] >= '0' && playerName[index] <= '9') &&
             playerName[index] != ' ') {
-            exit(0);
+            return 0;
         }
     }
-    exit(1);
+    return 1;
 }
 
 /*-----------------------------------Get Agreement-----------------------------------*/
@@ -611,22 +608,22 @@ Side Effects: None
 */
 int isPlacementValid(int xCoordinate, int yCoordinate, int shipLength, char shipOrientation, char grid[GRID_SIZE][GRID_SIZE]) {
     if (shipOrientation == 'H') { // if the ship orientation is horizontal, check if the ship fits within the grid and if the cells are empty
-        if (yCoordinate + shipLength > GRID_SIZE) exit(0);
+        if (yCoordinate + shipLength > GRID_SIZE) return 0;
         for (int index = 0; index < shipLength; index++) { // for each cell of the ship, if the cell is not empty, return 0 to indicate invalid placement
-            if (grid[xCoordinate][yCoordinate + index] != EMPTY_CELL) exit(0);
+            if (grid[xCoordinate][yCoordinate + index] != EMPTY_CELL) return 0;
         }
     } else if (shipOrientation == 'V') { // else if the ship orientation is vertical, check if the ship fits within the grid and if the cells are empty
-        if (xCoordinate + shipLength > GRID_SIZE) exit(0);
+        if (xCoordinate + shipLength > GRID_SIZE) return 0;
         for (int index = 0; index < shipLength; index++) { // for each cell of the ship, if the cell is not empty, return 0 to indicate invalid placement
             if (grid[xCoordinate + index][yCoordinate] != EMPTY_CELL) {
-                exit(0);
+                return 0;
             }
         }
     } else { // else return 0 to indicate invalid orientation
         printf("Invalid orientation. Please enter 'H' for horizontal or 'V' for vertical.\n");
-        exit(0);
+        return 0;
     }
-    exit(1); // return 1 to indicate valid placement
+    return 1; // return 1 to indicate valid placement
 }
 
 /*-----------------------------------Place Ship function-----------------------------------*/
