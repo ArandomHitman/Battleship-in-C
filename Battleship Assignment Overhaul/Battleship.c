@@ -6,13 +6,12 @@ The ships and their lengths are as follows: Carrier (5), Battleship (4), Submari
 The ships can be placed either horizontally (H) or vertically (V) on the grid. The game is played in turns. 
 The player and the enemy take turns attacking each other's grid. The game ends when all of the ships of one player are sunk. 
 The player who sinks all of their enemy's ships wins the game. If the player would like to play again, they can do so after the game ends.
-STATUS: COMPLETE
+STATUS: COMPLETE (for now, currently under revisions on github as of 01/27/2025)
 */
 /*-----------------------------------Included libraries-----------------------------------*/
 #include <stdio.h>  // Standard input/output library
 #include <stdlib.h> // Standard library
 #include <time.h>   // Time library for random number generation
-#include <strings.h> // String library for string manipulation and dynamic memory allocation
 #include <string.h> // String library for memset
 /*-----------------------------------Variable Declarations-----------------------------------*/
 // Global Constant Variables
@@ -60,7 +59,7 @@ void getPlayerName(char* playerName) {
     if (scanf("%31[^\n]s", playerName) != 1) { // Limit input to prevent buffer overflow
         printf("\nError reading the username. Please restart the game.\n");
     }
-    while(getchar() != '\n'); // Clears the input buffer
+    while (getchar() != '\n'); // Clears the input buffer
     printf("\nWelcome, %s! It's a pleasure meeting you!\n", playerName);
 }
 
@@ -77,17 +76,17 @@ int isValidName(const char* playerName) {
         nameLength++;
     }
     if (nameLength == 0 || nameLength > MAX_NAME_LENGTH) {
-        return 0;
+        exit(0);
     }
     for (int index = 0; index < nameLength; index++) {
         if (!(playerName[index] >= 'A' && playerName[index] <= 'Z') &&
             !(playerName[index] >= 'a' && playerName[index] <= 'z') &&
             !(playerName[index] >= '0' && playerName[index] <= '9') &&
             playerName[index] != ' ') {
-            return 0;
+            exit(0);
         }
     }
-    return 1;
+    exit(1);
 }
 
 /*-----------------------------------Get Agreement-----------------------------------*/
@@ -111,13 +110,13 @@ void getAgreement(char* playerAgreement) {
     if (scanf(" %c", playerAgreement) != 1) {
         printf("\nError reading agreement. Please restart the game.\n");
     }
-    while(getchar() != '\n'); // Clears the input buffer 
+    while (getchar() != '\n'); // Clears the input buffer 
     while (!isValidAgreement(playerAgreement)) {
         printf("\nI'm sorry, but '%c' is invalid. Do you agree to the game rules? (Y/N): ", *playerAgreement);
         if (scanf(" %c", playerAgreement) != 1) {
             printf("\nError reading agreement. Please restart the game.\n");
         }
-        while(getchar() != '\n'); // Clears the input buffer 
+        while (getchar() != '\n'); // Clears the input buffer 
     }
 }
 
@@ -157,12 +156,16 @@ Return: The valid coordinate (0-based index).
 Side Effects: None
 */
 int getValidCoordinate(const char* prompt) {
-    int coordinate;
-    printf("%s", prompt);
-    while (scanf("%d", &coordinate) != 1 || coordinate < 1 || coordinate > 10) {
-        printf("\nInvalid input. Please enter a number between 1 and 10: ");
-        while(getchar() != '\n'); // Clears the input buffer // Clear the input buffer
-    }
+    int coordinate = 0; // the coordinates for the player, initalized to 0
+    do {
+        printf("%s", prompt);
+        if (scanf("%d", &coordinate) != 1 || coordinate < 1 || coordinate > 10) {
+            printf("\nInvalid input. Please enter a number between 1 and 10: ");
+            while (getchar() != '\n'); // Clears the input buffer
+        } else {
+            break;
+        }
+    } while (1);
     return coordinate - 1; // Adjust for 0-based index
 }
 
@@ -177,20 +180,13 @@ Side Effects: None
 */
 int confirmPlacement(const char* shipName, int x, int y, char orientation) {
     char confirm;
-    printf("\nDo you want to place the %s at (%d, %d) with orientation %c? (Y/N): ", shipName, x + 1, y + 1, orientation);
-    if (scanf(" %c", &confirm) != 1) {
-        printf("Error reading confirmation. Please try again.\n");
-        return 0; // Indicate failure
-    }
-    while(getchar() != '\n'); // Clears the input buffer // Clear the input buffer
-    while (confirm != 'Y' && confirm != 'y' && confirm != 'N' && confirm != 'n') {
-        printf("\nSorry, but '%c' is invalid. Please enter either 'Y' or 'N': ", confirm);
+    do {
+        printf("\nDo you want to place the %s at (%d, %d) with orientation %c? (Y/N): ", shipName, x + 1, y + 1, orientation);
         if (scanf(" %c", &confirm) != 1) {
-            printf("\nError reading confirmation. Please try again.\n");
-            return 0; // Indicate failure
+            printf("Error reading confirmation. Please try again.\n");
         }
-        while(getchar() != '\n'); // Clears the input buffer // Clear the input buffer
-    }
+        while (getchar() != '\n'); // Clears the input buffer
+    } while (confirm != 'Y' && confirm != 'y' && confirm != 'N' && confirm != 'n');
     return (confirm == 'Y' || confirm == 'y');
 }
 
@@ -221,7 +217,7 @@ void placePlayerShips() {
 
     for (int shipIndex = 0; shipIndex < 4; shipIndex++) { // For each ship, place it on the grid
         int validPlacement = 0;
-        while (!validPlacement) {
+        do {
             printf("\nPlace your %s (length %d):\n", shipNames[shipIndex], shipLengths[shipIndex]);
             xCoordinate = getValidCoordinate("Enter starting X coordinate (1-10): ");
             yCoordinate = getValidCoordinate("Enter starting Y coordinate (1-10): ");
@@ -229,10 +225,10 @@ void placePlayerShips() {
             printf("\nEnter orientation (H for horizontal, V for vertical): ");
             if (scanf(" %c", &shipOrientation) != 1 || (shipOrientation != 'H' && shipOrientation != 'V')) {
                 printf("\nInvalid orientation '%c'. Please enter 'H' for horizontal or 'V' for vertical.\n", shipOrientation);
-                while(getchar() != '\n'); // Clears the input buffer
+                while (getchar() != '\n'); // Clears the input buffer
                 continue;
             }
-            while(getchar() != '\n'); // Clears the input buffer
+            while (getchar() != '\n'); // Clears the input buffer
 
             if (isPlacementValid(xCoordinate, yCoordinate, shipLengths[shipIndex], shipOrientation, playerGrid)) {
                 if (confirmPlacement(shipNames[shipIndex], xCoordinate, yCoordinate, shipOrientation)) {
@@ -247,7 +243,7 @@ void placePlayerShips() {
             } else {
                 printf("\nI'm sorry, but your placement of '%d, %d' is invalid. Please try again.\n", xCoordinate + 1, yCoordinate + 1);
             }
-        }
+        } while (!validPlacement);
     }
 }
 
@@ -266,7 +262,7 @@ void placeEnemyShips() {
 
     for (int shipIndex = 0; shipIndex < 4; shipIndex++) {
         int shipPlaced = 0;
-        while (!shipPlaced) {
+        do {
             shipOrientation = rand() % 2; // Randomly select orientation
             xCoordinate = rand() % GRID_SIZE; // Randomly select x and y coordinates
             yCoordinate = rand() % GRID_SIZE;
@@ -282,7 +278,7 @@ void placeEnemyShips() {
                     printf("\nPlaced enemy %s at (%d, %d) with orientation %c\n", shipNames[shipIndex], xCoordinate + 1, yCoordinate + 1, orientations[shipOrientation]);
                 }
             }
-        }
+        } while (!shipPlaced);
     }
     // Debug flag to print the enemy board for testing purposes
     if (DEBUG) { 
@@ -615,22 +611,22 @@ Side Effects: None
 */
 int isPlacementValid(int xCoordinate, int yCoordinate, int shipLength, char shipOrientation, char grid[GRID_SIZE][GRID_SIZE]) {
     if (shipOrientation == 'H') { // if the ship orientation is horizontal, check if the ship fits within the grid and if the cells are empty
-        if (yCoordinate + shipLength > GRID_SIZE) return 0;
+        if (yCoordinate + shipLength > GRID_SIZE) exit(0);
         for (int index = 0; index < shipLength; index++) { // for each cell of the ship, if the cell is not empty, return 0 to indicate invalid placement
-            if (grid[xCoordinate][yCoordinate + index] != EMPTY_CELL) return 0;
+            if (grid[xCoordinate][yCoordinate + index] != EMPTY_CELL) exit(0);
         }
     } else if (shipOrientation == 'V') { // else if the ship orientation is vertical, check if the ship fits within the grid and if the cells are empty
-        if (xCoordinate + shipLength > GRID_SIZE) return 0;
+        if (xCoordinate + shipLength > GRID_SIZE) exit(0);
         for (int index = 0; index < shipLength; index++) { // for each cell of the ship, if the cell is not empty, return 0 to indicate invalid placement
             if (grid[xCoordinate + index][yCoordinate] != EMPTY_CELL) {
-                return 0;
+                exit(0);
             }
         }
     } else { // else return 0 to indicate invalid orientation
         printf("Invalid orientation. Please enter 'H' for horizontal or 'V' for vertical.\n");
-        return 0;
+        exit(0);
     }
-    return 1; // return 1 to indicate valid placement
+    exit(1); // return 1 to indicate valid placement
 }
 
 /*-----------------------------------Place Ship function-----------------------------------*/
@@ -740,5 +736,5 @@ int main() {
     /*--------------------------------------------*/
     // End of the game/closing statement
     printf("Thank you for playing!\n");
-    return 0;
+    return 0; // Returns 0 to indicate that the program ran successfully
 }
