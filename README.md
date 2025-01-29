@@ -1,5 +1,6 @@
 # Battleship-in-C
-My recent programming assignment revamped and tweaked to function fully as an open source, terminal-based battleship game in C
+My recent programming assignment revamped and tweaked to function fully as an open source, terminal-based battleship game in C.
+NOTE: I am new to github and github repository creation/management, so while feedback/criticism is allowed, please try to be kind with it :)
 ## Table of Contents
 - [Introduction](#introduction)
 - [Features](#features)
