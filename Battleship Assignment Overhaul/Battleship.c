@@ -1,5 +1,5 @@
 /*
-AUTHOR: Liam Nayyar
+AUTHOR: ArandomHitman
 PURPOSE: A simplified version of the traditional boardgame 'Battleship'. 
 The game is played on a 10x10 grid where each player has 4 ships to place on the grid. 
 The ships and their lengths are as follows: Carrier (5), Battleship (4), Submarine (3), Patrol Boat (2). 
