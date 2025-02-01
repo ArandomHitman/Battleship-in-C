@@ -26,6 +26,7 @@ STATUS: COMPLETE (for now, currently under revisions on github as of 01/26/2025)
 // Function declarations (declared in advance since the calling loops cannot be in order)
 int isValidAgreement(const char* playerAgreement);
 void playerTurn();
+int isValidName(const char* playerName);
 void enemyTurn();
 int isValidCoordinate(int xCoordinate, int yCoordinate);
 int isPlacementValid(int xCoordinate, int yCoordinate, int shipLength, char shipOrientation, char grid[GRID_SIZE][GRID_SIZE]);
@@ -46,6 +47,16 @@ int enemySunkShips = 0; // Variable to store the integer value of the enemy sunk
 int lastHitXCoordinate = GRID_SIZE; // Track the last hit coordinates for the X axis, set to GRID_SIZE because it is out of valid range
 int lastHitYCoordinate = GRID_SIZE; // Track the last hit coordinates for the Y axis, set to GRID_SIZE because it is out of valid range
 
+/*-----------------------------------Clear Buffer Function-----------------------------------*/
+/*
+Purpose: Clear the input buffer to prevent buffer overflow.
+Parameters: None
+Return: None
+Side Effects: None
+*/
+void (ClearBuffer)() {
+    while (getchar() != '\n'); // Clear the input buffer of any remaining characters
+}
 /*-----------------------------------PrintMessage Function-----------------------------------*/
 /*
 Purpose: Print the welcome message to the player.
@@ -58,6 +69,26 @@ printf("========================================================================
 printf("                                           Welcome to Liam's Battleship Game!                                    \n");
 printf("=================================================================================================================\n");
 }
+
+/*-----------------------------------Get Valid Input Function-----------------------------------*/
+/*
+Purpose: Get valid input from the user based on the provided validation function.
+Parameters: const char* prompt - the prompt message to display.
+            char* input - a pointer to a character array to store the input.
+            int (*validationFunc)(const char*) - a pointer to the validation function.
+Return: None
+Side Effects: Modifies the input variable based on the user's input.
+*/
+void getValidInput(const char* prompt, char* input, int (*validationFunc)(const char*)) {
+    do {
+        printf("%s", prompt);
+        if (scanf("%31[^\n]s", input) != 1) {
+            printf("\nError reading input. Please try again.\n");
+        }
+        ClearBuffer();
+    } while (!validationFunc(input));
+}
+
 /*-----------------------------------Get Player Name-----------------------------------*/
 /*
 Purpose: Prompt the player to enter their name.
@@ -67,11 +98,7 @@ Side Effects: char* playerName - modifies the playerName variable to store the p
 */
 void getPlayerName(char* playerName) {
     memset(playerName, 0, MAX_NAME_LENGTH); // Initialize memory to prevent garbage values
-    printf("\nWelcome player, please enter your name: ");
-    if (scanf("%31[^\n]s", playerName) != 1) { // Limit input to prevent buffer overflow
-        printf("\nError reading the username. Please restart the game.\n");
-    }
-    while (getchar() != '\n'); // Clears the input buffer
+    getValidInput("\nWelcome player, please enter your name: ", playerName, isValidName);
     printf("\nWelcome, %s! It's a pleasure meeting you!\n", playerName);
 }
 
@@ -115,18 +142,7 @@ void getAgreement(char* playerAgreement) {
     printf("6. The player who sinks all of the enemy's ships wins the game.\n");
     printf("7. If you would like to play again, you can do so after the game ends.\n");
     printf("8. Whenever you are ready, please enter 'Y' to agree to the rules and start the game or 'N'.\n");
-    printf("Do you agree to the game rules? (Y/N): ");
-    if (scanf(" %c", playerAgreement) != 1) {
-        printf("\nError reading agreement. Please restart the game.\n");
-    }
-    while (getchar() != '\n'); // Clears the input buffer 
-    while (!isValidAgreement(playerAgreement)) {
-        printf("\nI'm sorry, but '%c' is invalid. Do you agree to the game rules? (Y/N): ", *playerAgreement);
-        if (scanf(" %c", playerAgreement) != 1) {
-            printf("\nError reading agreement. Please restart the game.\n");
-        }
-        while (getchar() != '\n'); // Clears the input buffer 
-    }
+    getValidInput("Do you agree to the game rules? (Y/N): ", playerAgreement, isValidAgreement);
 }
 
 /*-----------------------------------Rule Agreement Validation Function-----------------------------------*/
@@ -171,7 +187,7 @@ int getValidCoordinate(const char* prompt) {
         printf("%s", prompt);
         if (scanf("%d", &coordinate) != 1 || coordinate < 1 || coordinate > 10) {
             printf("\nInvalid input. Please enter a number between 1 and 10: ");
-            while (getchar() != '\n'); // Clears the input buffer
+            ClearBuffer();
         } else {
             break;
         }
@@ -195,7 +211,7 @@ int confirmPlacement(const char* shipName, int x, int y, char orientation) {
         if (scanf(" %c", &confirm) != 1) {
             printf("Error reading confirmation. Please try again.\n");
         }
-        while (getchar() != '\n'); // Clears the input buffer
+        ClearBuffer();
     } while (confirm != 'Y' && confirm != 'y' && confirm != 'N' && confirm != 'n');
     return (confirm == 'Y' || confirm == 'y');
 }
@@ -235,10 +251,10 @@ void placePlayerShips() {
             printf("\nEnter orientation (H for horizontal, V for vertical): ");
             if (scanf(" %c", &shipOrientation) != 1 || (shipOrientation != 'H' && shipOrientation != 'V')) {
                 printf("\nInvalid orientation '%c'. Please enter 'H' for horizontal or 'V' for vertical.\n", shipOrientation);
-                while (getchar() != '\n'); // Clears the input buffer
+                ClearBuffer();
                 continue;
             }
-            while (getchar() != '\n'); // Clears the input buffer
+            ClearBuffer();
 
             if (isPlacementValid(xCoordinate, yCoordinate, shipLengths[shipIndex], shipOrientation, playerGrid)) {
                 if (confirmPlacement(shipNames[shipIndex], xCoordinate, yCoordinate, shipOrientation)) {
@@ -581,19 +597,7 @@ Return: None
 Side Effects: char* playAgainChoice - modifies the state of the variable based on the users input.
 */
 void playAgain(char* playAgainChoice) {
-    // note: these errors are not meant to be printed under normal circumstances, but are included for robustness
-    printf("Do you want to play again? (Y/N): ");
-    if (scanf(" %c", playAgainChoice) != 1) {
-        printf("Error reading choice. Please restart the game.\n");
-    }
-    while(getchar() != '\n'); // Clears the input buffer 
-    while (!isValidAgreement(playAgainChoice)) {
-        printf("I'm sorry, but '%c' is invalid. Do you want to play again? (Y/N): ", *playAgainChoice);
-        if (scanf(" %c", playAgainChoice) != 1) {
-            printf("Error reading choice. Please restart the game.\n");
-        }
-        while(getchar() != '\n'); // Clears the input buffer 
-    }
+    getValidInput("Do you want to play again? (Y/N): ", playAgainChoice, isValidAgreement);
 }
 
 /*-----------------------------------Coordinate Validation Function-----------------------------------*/
@@ -666,7 +670,7 @@ void placeShip(int xCoordinate, int yCoordinate, int shipLength, char shipOrient
 /*
 Purpose: To count ship hits and to check if the ships are sunk. If all cells of a ship are hit, the ship is sunk.
 Parameters: char grid[GRID_SIZE][GRID_SIZE] - the grid to check for sunk ships.
-            int* sunkShipCount - a pointer to an integer to store the count of sunk ships.
+            int sunkShipCount - a pointer to an integer to store the count of sunk ships.
 Return: None
 Side Effects: Modifies the grid parameter and the sunkShipCount parameter.
 */
@@ -719,18 +723,7 @@ int main() {
     /*--------------------------------------------*/
     getPlayerName(playerName); // Calls the getPlayerName function to get the player's name
     /*--------------------------------------------*/
-    while (!isValidName(playerName)) { // While the name is invalid, the user will be prompted to enter a valid name
-        memset(playerName, 0, MAX_NAME_LENGTH); // Clear memory before re-entering name
-        printf("Invalid name '%s'. Please enter a valid name (1-32 characters, no special characters): ", playerName);
-        getPlayerName(playerName);
-    }
-    /*--------------------------------------------*/
     getAgreement(&playerAgreement); // Calls the getAgreement function to get the user's agreement to the rules
-    /*--------------------------------------------*/
-    while (!isValidAgreement(&playerAgreement)) { // while the agreement is invalid, the user will be prompted to enter a valid agreement
-        printf("I'm sorry, but '%c' is not valid. Please enter either 'Y' or 'N': ", playerAgreement);
-        getAgreement(&playerAgreement); // Calls the getAgreement function to get the user's agreement to the rules
-    }
     /*--------------------------------------------*/
     if (playerAgreement == 'Y' || playerAgreement == 'y') { // If the user puts 'Y' for agreement, the game will start
         do {
