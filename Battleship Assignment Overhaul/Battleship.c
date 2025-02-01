@@ -32,7 +32,7 @@ int isValidCoordinate(int xCoordinate, int yCoordinate);
 int isPlacementValid(int xCoordinate, int yCoordinate, int shipLength, char shipOrientation, char grid[GRID_SIZE][GRID_SIZE]);
 void placeShip(int xCoordinate, int yCoordinate, int shipLength, char shipOrientation, char grid[GRID_SIZE][GRID_SIZE]);
 void printBoard(char grid[GRID_SIZE][GRID_SIZE], const char* boardTitle);
-void HitandSunkShips(char grid[GRID_SIZE][GRID_SIZE], int* sunkShipCount);
+void hitAndSunkShips(char grid[GRID_SIZE][GRID_SIZE], int* sunkShipCount);
 
 // Global Variables
 char playerGrid[GRID_SIZE][GRID_SIZE]; // Variable to store the player grid
@@ -54,7 +54,7 @@ Parameters: None
 Return: None
 Side Effects: None
 */
-void (ClearBuffer)() {
+void ClearBuffer() {
     while (getchar() != '\n'); // Clear the input buffer of any remaining characters
 }
 /*-----------------------------------PrintMessage Function-----------------------------------*/
@@ -82,7 +82,7 @@ Side Effects: Modifies the input variable based on the user's input.
 void getValidInput(const char* prompt, char* input, int (*validationFunc)(const char*)) {
     do {
         printf("%s", prompt);
-        if (scanf("%31[^\n]s", input) != 1) {
+        if (scanf("%31[^\n]", input) != 1) {
             printf("\nError reading input. Please try again.\n");
         }
         ClearBuffer();
@@ -171,7 +171,7 @@ void initializeGame() {
     memset(playerViewOfEnemyGrid, EMPTY_CELL, sizeof(playerViewOfEnemyGrid)); // Initialize player's view of enemy grid
     playerHits = playerMisses = playerSunkShips = 0;
     enemyHits = enemyMisses = enemySunkShips = 0;
-    int lastHitXCoordinate,lastHitYCoordinate = GRID_SIZE; // Set to GRID_SIZE because it is out of valid range
+    lastHitXCoordinate = lastHitYCoordinate = GRID_SIZE; // Set to GRID_SIZE because it is out of valid range
 }
 
 /*-----------------------------------Helper Functions-----------------------------------*/
@@ -248,12 +248,15 @@ void placePlayerShips() {
             xCoordinate = getValidCoordinate("Enter starting X coordinate (1-10): ");
             yCoordinate = getValidCoordinate("Enter starting Y coordinate (1-10): ");
 
-            printf("\nEnter orientation (H for horizontal, V for vertical): ");
-            if (scanf(" %c", &shipOrientation) != 1 || (shipOrientation != 'H' && shipOrientation != 'V')) {
-                printf("\nInvalid orientation '%c'. Please enter 'H' for horizontal or 'V' for vertical.\n", shipOrientation);
-                ClearBuffer();
-                continue;
-            }
+            do {
+                printf("\nEnter orientation (H for horizontal, V for vertical): ");
+                if (scanf(" %c", &shipOrientation) != 1 || (shipOrientation != 'H' && shipOrientation != 'V')) {
+                    printf("\nInvalid orientation '%c'. Please enter 'H' for horizontal or 'V' for vertical.\n", shipOrientation);
+                    ClearBuffer();
+                } else {
+                    break;
+                }
+            } while (1);
             ClearBuffer();
 
             if (isPlacementValid(xCoordinate, yCoordinate, shipLengths[shipIndex], shipOrientation, playerGrid)) {
@@ -324,14 +327,14 @@ void gameLoop() {
     int gameWon = 0;
     while (gameWon == 0) {
         playerTurn();
-        HitandSunkShips(enemyGrid, &enemySunkShips);
+        hitAndSunkShips(enemyGrid, &enemySunkShips);
         if (enemySunkShips == 4) {
             printf("\nCongratulations! You won!\n");
             gameWon = 1;
             break;
         }
         enemyTurn();
-        HitandSunkShips(playerGrid, &playerSunkShips);
+        hitAndSunkShips(playerGrid, &playerSunkShips);
         if (playerSunkShips == 4) {
             printf("\nThe enemy has won. Better luck next time!\n");
             gameWon = 1;
@@ -431,10 +434,9 @@ void playerTurn() {
     xCoordinate = getValidCoordinate("Enter X coordinate to attack (1-10): ");
     yCoordinate = getValidCoordinate("Enter Y coordinate to attack (1-10): ");
 
-    while (!isValidCoordinate(xCoordinate, yCoordinate)) {
-        printf("Invalid coordinates (%d, %d). Enter X coordinate to attack (1-10): ", xCoordinate + 1, yCoordinate + 1);
-        xCoordinate = getValidCoordinate("Enter X coordinate to attack (1-10): ");
-        yCoordinate = getValidCoordinate("Enter Y coordinate to attack (1-10): ");
+    if (!isValidCoordinate(xCoordinate, yCoordinate)) {
+        printf("Invalid coordinates (%d, %d). Please enter valid coordinates.\n", xCoordinate + 1, yCoordinate + 1);
+        return;
     }
 
     if (playerViewOfEnemyGrid[xCoordinate][yCoordinate] == HIT_CELL || playerViewOfEnemyGrid[xCoordinate][yCoordinate] == MISS_CELL) {
@@ -456,7 +458,7 @@ void playerTurn() {
         if (DEBUG) { // note: add 10 here
             printf("Marked enemy grid at (%d, %d) as HIT_CELL\n", xCoordinate, yCoordinate);
         }
-        HitandSunkShips(enemyGrid, &enemySunkShips); // Pass the address of enemySunkShips to update it correctly
+        hitAndSunkShips(enemyGrid, &enemySunkShips); // Pass the address of enemySunkShips to update it correctly
     } else {
         printf("MISS!\n");
         playerMisses++;
@@ -544,7 +546,7 @@ void enemyTurn() {
         if (DEBUG) {
             printf("Marked player grid at (%d, %d) as HIT_CELL\n", xCoordinate, yCoordinate);
         }
-        HitandSunkShips(playerGrid, &playerSunkShips);
+        hitAndSunkShips(playerGrid, &playerSunkShips);
     } else {
         printf("Enemy MISS!\n"); // print the miss message
         enemyMisses++; // increment the enemy misses
@@ -632,9 +634,7 @@ int isPlacementValid(int xCoordinate, int yCoordinate, int shipLength, char ship
     } else if (shipOrientation == 'V') { // else if the ship orientation is vertical, check if the ship fits within the grid and if the cells are empty
         if (xCoordinate + shipLength > GRID_SIZE) return 0;
         for (int index = 0; index < shipLength; index++) { // for each cell of the ship, if the cell is not empty, return 0 to indicate invalid placement
-            if (grid[xCoordinate + index][yCoordinate] != EMPTY_CELL) {
-                return 0;
-            }
+            if (grid[xCoordinate + index][yCoordinate] != EMPTY_CELL) return 0;
         }
     } else { // else return 0 to indicate invalid orientation
         printf("Invalid orientation. Please enter 'H' for horizontal or 'V' for vertical.\n");
@@ -674,7 +674,7 @@ Parameters: char grid[GRID_SIZE][GRID_SIZE] - the grid to check for sunk ships.
 Return: None
 Side Effects: Modifies the grid parameter and the sunkShipCount parameter.
 */
-void HitandSunkShips(char grid[GRID_SIZE][GRID_SIZE], int* sunkShipCount) { 
+void hitAndSunkShips(char grid[GRID_SIZE][GRID_SIZE], int* sunkShipCount) { 
     int shipLengths[] = {5, 4, 3, 2}; // Carrier, Battleship, Submarine, Patrol Boat
     char* shipNames[] = {"Carrier", "Battleship", "Submarine", "Patrol Boat"}; // note: changed to array of strings
     int sunkCount = 0; // Initialize the sunk ship count to 0
